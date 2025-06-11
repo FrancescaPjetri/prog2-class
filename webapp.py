@@ -342,3 +342,4 @@ if __name__ == '__main__':
     print(f"Expected summary files pattern: {COMPANY_NAME}_summary_*.txt")
     print(f"Expected table files pattern: {COMPANY_NAME}_*_table.txt")
     app.run(debug=True, host='0.0.0.0', port=5001)
+
