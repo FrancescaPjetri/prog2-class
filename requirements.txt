@@ -1,0 +1,7 @@
+quivr-core
+google-generativeai
+PyPDF2
+PyYAML
+Flask
+Markdown
+schedule
