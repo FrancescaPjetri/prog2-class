@@ -14,8 +14,8 @@ def ensure_dir(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
-def download_pdf(url, download_dir):
-    local_filename = os.path.join(download_dir, url.split("/")[-1])
+def download_pdf(url, download_dir, filename):
+    local_filename = os.path.join(download_dir, filename)
     if os.path.exists(local_filename):
         print(f"Already downloaded: {local_filename}")
         return
@@ -33,27 +33,53 @@ def scrape_airbnb_pdfs():
     ensure_dir(DOWNLOAD_DIR)
 
     chrome_options = Options()
-    chrome_options.add_argument("--headless")
+    #chrome_options.add_argument("--headless")
     chrome_options.add_argument("--disable-gpu")
 
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
     driver.get(BASE_URL)
-    time.sleep(5)  # Attendi che i PDF vengano caricati
+    time.sleep(5)  # Wait for the page to load
 
-    links = driver.find_elements("tag name", "a")
-    pdf_links = [
-        urljoin(BASE_URL, link.get_attribute("href"))
-        for link in links
-        if link.get_attribute("href") and link.get_attribute("href").lower().endswith(".pdf")
-    ]
+    # Find the financials table
+    table = driver.find_element("xpath", "//div[contains(@class, 'module-financial-table_header')]/following-sibling::table")
+    # Get year headers from the table
+    year_headers = table.find_elements("xpath", ".//tr[1]/td | .//tr[1]/th | .//thead/tr/th | .//thead/tr/td")
+    years = []
+    for header in year_headers:
+        text = header.text.strip()
+        if text.isdigit():
+            years.append(text)
+    if not years:
+        # Fallback: try to get years from visible year header divs
+        years = [y.text.strip() for y in driver.find_elements("xpath", "//div[contains(@class, 'module-financial-table_header-year')]") if y.text.strip().isdigit()]
+    if not years:
+        print("Could not find year headers.")
+        driver.quit()
+        return
 
-    if not pdf_links:
-        print("No PDF links found.")
-    else:
-        print(f"Found {len(pdf_links)} PDF links.")
-        for link in pdf_links:
-            download_pdf(link, DOWNLOAD_DIR)
-
+    # Iterate over table rows (each row is a document type)
+    rows = table.find_elements("xpath", ".//tr[contains(@class, 'module-financial-table_track')]")
+    for row in rows:
+        try:
+            doc_type = row.find_element("xpath", ".//th").text.strip().replace(' ', '_')
+        except Exception:
+            continue
+        cells = row.find_elements("xpath", ".//td")
+        for i, cell in enumerate(cells):
+            year = years[i] if i < len(years) else 'unknown'
+            links = cell.find_elements("xpath", ".//a[contains(@href, '.pdf')]")
+            for link in links:
+                href = link.get_attribute("href")
+                quarter = link.text.strip().replace(' ', '')
+                if not quarter:
+                    # Try to get from aria-label
+                    quarter = link.get_attribute('aria-label')
+                    if quarter:
+                        quarter = quarter.split()[0]
+                if not quarter:
+                    quarter = 'Q?'
+                filename = f"{year}_{quarter}_{doc_type}.pdf"
+                download_pdf(href, DOWNLOAD_DIR, filename)
     driver.quit()
 
 if __name__ == "__main__":
