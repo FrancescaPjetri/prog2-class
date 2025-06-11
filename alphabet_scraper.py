@@ -9,10 +9,6 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 # List of investor pages
 PAGES = [
-    "https://investors.airbnb.com/financials/default.aspx#quarterly",
-    "https://investor.apple.com/",
-    "https://ir.tesla.com/",
-    "https://investor.nvidia.com/",
     "https://abc.xyz/investor/"
 ]
 
