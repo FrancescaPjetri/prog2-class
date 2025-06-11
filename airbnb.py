@@ -8,7 +8,7 @@ from urllib.parse import urljoin
 import requests
 
 BASE_URL = "https://investors.airbnb.com/financials/default.aspx#quarterly"
-DOWNLOAD_DIR = "airbnb_pdfs"
+DOWNLOAD_DIR = "pdf_downloads_airbnb"
 
 def ensure_dir(path):
     if not os.path.exists(path):
