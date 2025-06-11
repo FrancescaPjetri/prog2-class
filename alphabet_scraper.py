@@ -12,7 +12,7 @@ PAGES = [
     "https://abc.xyz/investor/"
 ]
 
-DOWNLOAD_DIR = "pdf_downloads"
+DOWNLOAD_DIR = "pdf_downloads_alphabet"
 
 def ensure_dir(path):
     if not os.path.exists(path):
