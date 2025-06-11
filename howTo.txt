@@ -1,0 +1,9 @@
+1. conda activate prog2-class
+2. pip install -r requirements.txt
+3. python3 airbnb_scraper.py
+4. python3 alphabet_scraper.py
+5. python3 apple_scraper.py
+6. python3 nvidia_scraper.py
+7. python3 summerize_earnings.py 
+8. python3 webapp.py
+9. go to http://127.0.0.1:5001
