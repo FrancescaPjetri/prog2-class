@@ -15,7 +15,7 @@ EARNINGS_DIR = "earnings"
 OUTPUT_DIR = "summaries"
 SUMMARY_OUTPUT_FILE_TEMPLATE = os.path.join(OUTPUT_DIR, "{company_name}_summary_{start_year}-{end_year}.txt")
 TABLE_OUTPUT_FILE_TEMPLATE = os.path.join(OUTPUT_DIR, "{company_name}_{year}_table.txt")
-TARGET_START_YEAR = 2020
+TARGET_START_YEAR = 2024
 TARGET_END_YEAR = 2030
 SETTINGS_FILE = "settings.yaml"
 
