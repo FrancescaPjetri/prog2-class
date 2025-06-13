@@ -6,4 +6,4 @@
 6. python3 nvidia_scraper.py
 7. python3 summerize_earnings.py 
 8. python3 webapp.py
-9. go to http://127.0.0.1:5001
+9. go to link provided in the Terminal
