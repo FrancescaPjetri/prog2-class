@@ -11,10 +11,8 @@ from collections import defaultdict
 
 
 # --- Configuration ---
-# NEW: Directory to store the full extracted text for chat context
 CONTEXT_DIR = "contexts"
 OUTPUT_DIR = "summaries"
-# NEW: Template for the full-text context file
 CONTEXT_OUTPUT_FILE_TEMPLATE = os.path.join(CONTEXT_DIR, "{company_name}_latest_context.txt")
 SUMMARY_OUTPUT_FILE_TEMPLATE = os.path.join(OUTPUT_DIR, "{company_name}_summary_latest_{year}.txt")
 TABLE_OUTPUT_FILE_TEMPLATE = os.path.join(OUTPUT_DIR, "{company_name}_{year}_table.txt")
@@ -32,21 +30,166 @@ INPUT_FOLDERS = [
 ]
 
 
+# --- NEW: FEW-SHOT PROMPT CONFIGURATION ---
+# This dictionary holds the "gold standard" examples for each company.
+# The AI will be instructed to copy the style of the relevant example.
+
+PROMPT_CONFIG = {
+    "APPLE": """
+You are a financial analyst who emulates writing styles perfectly.
+Your task is to summarize the new earnings report provided below so that it matches the style, tone, and structure of the example summary.
+
+--- EXAMPLE SUMMARY ---
+
+### Q2 Key Metrics
+* **EPS:** $1.65
+* **Revenue:** $95.4B
+* **iPhone Revenue:** $46.84B
+* **Services Revenue:** $26.65B
+* **Gross Margin:** 47.1%
+
+### Business Performance and Q3 Guidance
+Apple's net income grew to $24.78 billion from $23.64 billion a year ago. The key iPhone product line topped estimates with sales up nearly 2% annually. While Services revenue grew 11.65% to $26.65B, this represented a deceleration from the 14.2% growth seen in the prior year's quarter. For Q3, the company expects "low to mid-single digits" revenue growth and a gross margin of 46% at the midpoint.
+
+### Strategic Focus: Tariffs and Supply Chain
+CEO Tim Cook stated tariffs had a "limited impact" in the quarter due to supply chain optimization. However, they are expected to add **$900 million to costs** in the current quarter. To mitigate this, Cook confirmed Apple is sourcing about half of its iPhones for the U.S. from **India** and most other products from **Vietnam**, while still making the "vast majority" of products for other countries in China.
+
+### Segment Deep Dive: Hardware and Regional Sales
+Mac sales rose nearly 7% to just under $8 billion, and iPad sales surged 15% to $6.4 billion following new model releases. The Wearables division was a weak spot, declining 5% to $7.52 billion, which Cook partly attributed to a tough comparison against the Vision Pro launch in the year-ago quarter. Sales in Greater China were down slightly, but would have been flat excluding foreign exchange rates, while sales in the Americas grew nearly 8%.
+
+### AI Updates and Shareholder Returns
+The company announced it would delay some of its anticipated AI features for Siri to the "coming year" to meet its "high quality bar." On the capital return front, the board authorized up to **$100 billion in share repurchases** and increased the dividend by 4% to 26 cents per share.
+
+--- END EXAMPLE SUMMARY ---
+
+Now, using the new report text provided below, generate a new summary that is similair in the style of the example. Also include information that could be important for retail investors. Also inlclude and dedicate a big part of the summary on the guidance of the company. 
+
+--- NEW REPORT TEXT ---
+{text_to_summarize}
+--- END NEW REPORT TEXT ---
+
+New Summary:
+""",
+    "AIRBNB": """
+You are a financial analyst who emulates writing styles perfectly.
+Your task is to summarize the new earnings report provided below so that it matches the style, tone, and structure of the example summary.
+
+--- EXAMPLE SUMMARY ---
+
+### Q1 Key Metrics vs. Expectations
+* **Earnings per share (EPS):** 24 cents
+* **Revenue:** $2.27 billion
+* **Gross Booking Value (GBV):** $24.5 billion, up 7% YoY .
+* **Nights & Experiences Booked:** 143.1 million
+
+### Financial Performance and Q2 Guidance
+Revenue increased 6% year-over-year, but net income saw a significant drop to $154 million from $264 million in the prior-year period. For Q2, the company projects revenue between $2.99 billion and $3.05 billion, with the midpoint slightly missing analyst forecasts of $3.04 billion. This guidance includes an expected two-percentage-point benefit from the timing of Easter.
+
+### Regional Performance: A Tale of Two Markets
+The company reported "relatively softer results" in the U.S., attributing the weakness to "broader economic uncertainties." In contrast, international markets showed strength, with nights and experiences booked (excluding North America) growing 11% YoY. Latin America was highlighted as the fastest-growing region, and bookings from Canada to Mexico saw a 27% jump in March.
+
+### Platform and Operational Updates
+Airbnb teased upcoming updates to its platform that will expand beyond accommodations. On the operational front, the company has removed 450,000 listings since updating its host quality system in 2023 to improve user experience.
+
+--- END EXAMPLE SUMMARY ---
+
+Now, using the new report text provided below, generate a new summary that is similair in the style of the example. Also include information that could be important for retail investors. Also inlclude and dedicate a big part of the summary on the guidance of the company.
+
+--- NEW REPORT TEXT ---
+{text_to_summarize}
+--- END NEW REPORT TEXT ---
+
+New Summary:
+""",
+    "NVIDIA": """
+You are a financial analyst who emulates writing styles perfectly.
+Your task is to summarize the new earnings report provided below so that it matches the style, tone, and structure of the example summary.
+
+--- EXAMPLE SUMMARY ---
+
+### Q1 Key Metrics vs. Expectations
+* **Earnings per share (EPS):** 96 cents adjusted
+* **Revenue:** $44.06 billion
+* **Net Income:** $18.8 billion, an increase of 26% year-over-year.
+
+### The China Impact: H20 Export Ban
+The company's guidance and gross margin were significantly impacted by a U.S. government export restriction on its China-bound H20 processor. Nvidia incurred **$4.5 billion in charges** related to excess inventory for the chip. The company's guidance of $45 billion for the next quarter would have been about **$8 billion higher** without the restriction. CEO Jensen Huang stated the $50 billion AI chip market in China is now "effectively closed to U.S. industry."
+
+### Core Business Performance: Data Center Growth
+Despite the China headwinds, overall revenue grew an impressive 69% YoY. The **Data Center division** was the primary driver, with sales surging 73% annually to **$39.1 billion**, now accounting for 88% of total revenue. Large cloud providers made up just under half of the data center revenue, and a notable $5 billion in sales came from networking products. As a sign of strong future demand, CFO Colette Kress noted that Microsoft has "deployed tens of thousands of Blackwell GPUs."
+
+### Other Segment Highlights
+* **Gaming:** Grew 42% annually to $3.8 billion, with its chips still powering the upcoming Nintendo Switch 2.
+* **Automotive & Robotics:** Grew 72% to $567 million, driven by sales for self-driving car systems.
+* **Professional Visualization:** Grew 19% to $509 million.
+
+### Shareholder Returns
+The company was active in returning capital to shareholders, spending **$14.1 billion on share repurchases** and paying $244 million in dividends during the quarter.
+
+--- END EXAMPLE SUMMARY ---
+
+Now, using the new report text provided below, generate a new summary that is similair in the style of the example. Also include information that could be important for retail investors. Also inlclude and dedicate a big part of the summary on the guidance of the company.
+
+--- NEW REPORT TEXT ---
+{text_to_summarize}
+--- END NEW REPORT TEXT ---
+
+New Summary:
+""",
+    "ALPHABET": """
+You are a financial analyst who emulates writing styles perfectly.
+Your task is to summarize the new earnings report provided below so that it matches the style, tone, and structure of the example summary.
+
+--- EXAMPLE SUMMARY ---
+
+### Q4 Key Metrics vs. Expectations
+* **Revenue:** $96.47B 
+* **Earnings per share (EPS):** $2.15 
+* **YouTube advertising revenue:** $10.47B 
+* **Google Cloud revenue:** $11.96B 
+* **Traffic acquisition costs (TAC):** $14.89B
+
+### Business Performance & Growth
+Alphabet's overall revenue grew nearly 12% year-over-year, a slight deceleration from the 13% growth in the prior year's quarter. The company's fourth-quarter net income increased over 28% to $26.54 billion from $20.69 billion a year prior. While Google Cloud revenue missed analyst estimates, it still grew a robust 30% from the year prior.
+
+### Strategic Focus: Aggressive AI Capital Expenditures
+A key announcement was the plan to invest **$75 billion in capital expenditures in 2025** to expand its AI strategy, significantly above the $58.84 billion Wall Street expected. The CFO confirmed this investment is primarily for technical infrastructure, with servers and data centers being the largest components to support growth across all Google divisions.
+
+### Segment Analysis: Cloud and Other Bets
+The Cloud unit faced a "tight supply-demand situation," with the CFO noting that the company "exited the year with more demand than we had available capacity." The 'Other Bets' segment, including Waymo, reported revenue of $400 million, down 39% YoY and missing expectations. However, Waymo is expanding its robotaxi service, launching in Austin and internationally in Tokyo in 2025.
+
+--- END EXAMPLE SUMMARY ---
+
+Now, using the new report text provided below, generate a new summary that is similair in the style of the example. Also include information that could be important for retail investors. Also inlclude and dedicate a big part of the summary on the guidance of the company.
+
+--- NEW REPORT TEXT ---
+{text_to_summarize}
+--- END NEW REPORT TEXT ---
+
+New Summary:
+""",
+    # The DEFAULT prompt is a "zero-shot" instruction, for companies without an example.
+    "DEFAULT": """
+You are a financial analyst. Your task is to provide a comprehensive summary of the following earnings report.
+Format the output in Markdown. Use headings for different sections (e.g., Key Financial Highlights, Business Segment Performance, Trends, Outlook).
+Use bullet points for lists of items. Bold key terms or figures.
+
+Report Text:
+{text_to_summarize}
+"""
+}
+
+
 def load_settings(settings_path):
     """Loads settings from a YAML file."""
     try:
         with open(settings_path, 'r', encoding='utf-8') as f:
             settings = yaml.safe_load(f)
             return settings
-    except FileNotFoundError:
-        print(f"Error: Settings file '{settings_path}' not found.")
-        return None
-    except yaml.YAMLError as e:
-        print(f"Error parsing YAML file '{settings_path}': {e}")
+    except (FileNotFoundError, yaml.YAMLError):
+        print(f"Warning: Could not load settings from {settings_path}")
         return None
 
-
-# Load settings
 settings = load_settings(SETTINGS_FILE)
 GOOGLE_API_KEY = None
 if settings:
@@ -100,7 +243,6 @@ def call_google_ai(prompt_text, task_description="task", model_name="gemini-1.5-
             HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
         }
         
-        # Increased token limit for potentially larger summaries
         generation_config = genai.types.GenerationConfig(
             candidate_count=1, max_output_tokens=8192, temperature=0.5 
         )
@@ -114,15 +256,22 @@ def call_google_ai(prompt_text, task_description="task", model_name="gemini-1.5-
         return f"Error during {task_description}: {e}"
 
 
-def generate_summary_with_google_ai(text_to_summarize):
-    if not text_to_summarize: return "No content available for summarization."
-    prompt = (
-        f"Please provide a comprehensive summary of the following earnings report. "
-        f"Format the output in Markdown. Use headings for different sections (e.g., Key Financial Highlights, Trends, Outlook). "
-        f"Use bullet points for lists of items. Bold key terms or figures.\n\n"
-        f"Reports Text:\n{text_to_summarize}"
-    )
-    return call_google_ai(prompt, "Markdown summary generation")
+# --- MODIFIED: This function now uses the PROMPT_CONFIG dictionary ---
+def generate_summary_with_google_ai(text_to_summarize, company_name):
+    """
+    Generates a summary using a company-specific few-shot prompt.
+    """
+    if not text_to_summarize: 
+        return "No content available for summarization."
+
+    # Get the correct prompt template, which now includes the example summary.
+    # Fall back to the 'DEFAULT' instruction-based prompt if no example exists.
+    prompt_template = PROMPT_CONFIG.get(company_name.upper(), PROMPT_CONFIG['DEFAULT'])
+    
+    # Fill the placeholder with the new report text
+    final_prompt = prompt_template.format(text_to_summarize=text_to_summarize)
+    
+    return call_google_ai(final_prompt, f"Few-shot summary generation for {company_name}")
 
 
 def generate_yearly_table_with_google_ai(year, yearly_text):
@@ -170,7 +319,6 @@ def ensure_dir(directory):
 
 def main():
     print("Starting earnings report processing...")
-    # --- MODIFIED --- Ensure all needed directories exist
     ensure_dir(OUTPUT_DIR)
     ensure_dir(CONTEXT_DIR) 
     for folder in INPUT_FOLDERS:
@@ -198,15 +346,12 @@ def main():
         
         print(f"Identified newest report: {os.path.basename(newest_pdf_path)}")
 
-        # --- MODIFIED WORKFLOW ---
-        # 1. Extract the FULL text from the newest PDF
         full_report_text = extract_text_from_pdf(newest_pdf_path)
 
         if not full_report_text.strip():
             print(f"No text could be extracted from {newest_pdf_path}. Skipping {company}.")
             continue
 
-        # 2. NEW: Save the FULL extracted text to the `contexts` directory for the chat app
         context_filename = CONTEXT_OUTPUT_FILE_TEMPLATE.format(company_name=company)
         try:
             with open(context_filename, "w", encoding="utf-8") as f:
@@ -215,9 +360,10 @@ def main():
         except IOError as e:
             print(f"Error saving context file for {company}: {e}")
 
-        # 3. Generate a user-friendly summary from the full text for the main web page
-        print(f"Generating summary for {company}...")
-        summary_content = generate_summary_with_google_ai(full_report_text)
+        # --- MODIFIED: Pass the company name to the summary generator ---
+        print(f"Generating style-matched summary for {company}...")
+        summary_content = generate_summary_with_google_ai(full_report_text, company)
+        
         summary_filename = SUMMARY_OUTPUT_FILE_TEMPLATE.format(company_name=company, year=latest_year)
         try:
             with open(summary_filename, "w", encoding="utf-8") as f:
@@ -226,7 +372,6 @@ def main():
         except IOError as e:
             print(f"Error saving summary file: {e}")
 
-        # 4. Generate the data table (optional, but nice to keep)
         print(f"Generating data table for {company}...")
         table_content = generate_yearly_table_with_google_ai(latest_year, full_report_text)
         table_filename = TABLE_OUTPUT_FILE_TEMPLATE.format(company_name=company, year=latest_year)
@@ -243,3 +388,4 @@ def main():
 if __name__ == "__main__":
     main()
 
+#check this is the final version 
